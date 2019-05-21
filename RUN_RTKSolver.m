@@ -50,7 +50,7 @@ basePosition = [4041839.1018   537121.6018  4888452.5105];
 
 
 %%%%%%%%%%% This should be (public) options!
-NumberEpochs2Use = 4500;
+NumberEpochs2Use = 500;%4500;
 GPS_flag = 1; GLO_flag = 0; GAL_flag = 0;
 elevationMask = 15;
 %%%%%%%%%%% These should NOT be (public) options!
@@ -58,7 +58,7 @@ useCycleSlipDetection = 0; useCycleSlipDetectionFreqComb = 1;
 useInstantaneousMode = 1;
 useDopplerUpdate = 0;
 SlipThres   = 0.005;
-Ratio2FixAmb= 3;
+Ratio2FixAmb= 1;%3;
 useFixHold = 0;
 useCorrectionDebug = 1;
 %%%%%%%%%%%
@@ -120,8 +120,8 @@ Observ_h    = @CorrectionModelEKF_RTK;
 % Satellite observation weighting
 setVarianceL1 = @(El) 0.15 * (0.001./sin(El));
 setVarianceL2 = @(El) 0.10 * (0.001./sin(El));
-ScalingPhase = (1/100)^2; % 100000; %  
-ScalingCode = 1;% 100000; % 
+ScalingPhase = 1/100;  %  (1/100)^2; %1; %   
+ScalingCode =  100;  % 1;% 10000; %  
 
 RTK = RTK_Release(...
         '-basePosition', basePosition,...
@@ -238,15 +238,15 @@ for iGNSS=1:NumberEpochs2Use
         DDRangeL1_d         = DDRangeL1 + d_iRef_BL1 - d_iRef_RL1;
         DDPhaseL1_d         = DDPhaseL1 + d_iRef_BL1 - d_iRef_RL1;
         
-        shortenObsC1_R      = C1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 ) - CLKoffset_R(end);
-        shortenObsC1_B      = C1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end);
-        shortenObsL1_R      = L1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 ) - CLKoffset_R(end);
-        shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end);
+%         shortenObsC1_R      = C1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 ) - CLKoffset_R(end);
+%         shortenObsC1_B      = C1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end);
+%         shortenObsL1_R      = L1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 ) - CLKoffset_R(end);
+%         shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end);
         
-%         shortenObsC1_R      = C1C_R_corr(satUsedInd_R1)'  - CLKoffset_R(end);
-%         shortenObsC1_B      = C1C_B_corr(satUsedInd_B1)'  - CLKoffset_B(end);
-%         shortenObsL1_R      = L1C_R_corr(satUsedInd_R1)'  - CLKoffset_R(end);
-%         shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)'  - CLKoffset_B(end);
+        shortenObsC1_R      = C1C_R_corr(satUsedInd_R1)'  - CLKoffset_R(end);
+        shortenObsC1_B      = C1C_B_corr(satUsedInd_B1)'  - CLKoffset_B(end);
+        shortenObsL1_R      = L1C_R_corr(satUsedInd_R1)'  - CLKoffset_R(end);
+        shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)'  - CLKoffset_B(end);
        
         
         
@@ -289,15 +289,15 @@ for iGNSS=1:NumberEpochs2Use
         DDRangeL2_d           = DDRangeL2 + d_iRef_BL2 - d_iRef_RL2;
         DDPhaseL2_d           = DDPhaseL2 + d_iRef_BL2 - d_iRef_RL2;
         
-        shortenObsC2_R      = C2C_R_corr(satUsedInd_R2)' - sqrt( (RTK.state_(1) - SV_pos_R2(satUsedInd_R2,1)).^2 + (RTK.state_(2) - SV_pos_R2(satUsedInd_R2,2)).^2 + (RTK.state_(3) - SV_pos_R2(satUsedInd_R2,3)).^2 ) - CLKoffset_R(end);
-        shortenObsC2_B      = C2C_B_corr(satUsedInd_B2)' - sqrt( (basePosition(1) - SV_pos_B2(satUsedInd_B2,1)).^2 + (basePosition(2) - SV_pos_B2(satUsedInd_B2,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B2,3)).^2 ) - CLKoffset_B(end);
-        shortenObsL2_R      = L2C_R_corr(satUsedInd_R2)' - sqrt( (RTK.state_(1) - SV_pos_R2(satUsedInd_R2,1)).^2 + (RTK.state_(2) - SV_pos_R2(satUsedInd_R2,2)).^2 + (RTK.state_(3) - SV_pos_R2(satUsedInd_R2,3)).^2 ) - CLKoffset_R(end);
-        shortenObsL2_B      = L2C_B_corr(satUsedInd_B2)' - sqrt( (basePosition(1) - SV_pos_B2(satUsedInd_B2,1)).^2 + (basePosition(2) - SV_pos_B2(satUsedInd_B2,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B2,3)).^2 ) - CLKoffset_B(end);
+%         shortenObsC2_R      = C2C_R_corr(satUsedInd_R2)' - sqrt( (RTK.state_(1) - SV_pos_R2(satUsedInd_R2,1)).^2 + (RTK.state_(2) - SV_pos_R2(satUsedInd_R2,2)).^2 + (RTK.state_(3) - SV_pos_R2(satUsedInd_R2,3)).^2 ) - CLKoffset_R(end);
+%         shortenObsC2_B      = C2C_B_corr(satUsedInd_B2)' - sqrt( (basePosition(1) - SV_pos_B2(satUsedInd_B2,1)).^2 + (basePosition(2) - SV_pos_B2(satUsedInd_B2,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B2,3)).^2 ) - CLKoffset_B(end);
+%         shortenObsL2_R      = L2C_R_corr(satUsedInd_R2)' - sqrt( (RTK.state_(1) - SV_pos_R2(satUsedInd_R2,1)).^2 + (RTK.state_(2) - SV_pos_R2(satUsedInd_R2,2)).^2 + (RTK.state_(3) - SV_pos_R2(satUsedInd_R2,3)).^2 ) - CLKoffset_R(end);
+%         shortenObsL2_B      = L2C_B_corr(satUsedInd_B2)' - sqrt( (basePosition(1) - SV_pos_B2(satUsedInd_B2,1)).^2 + (basePosition(2) - SV_pos_B2(satUsedInd_B2,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B2,3)).^2 ) - CLKoffset_B(end);
         
-%         shortenObsC2_R      = C2C_R_corr(satUsedInd_R2)' - CLKoffset_R(end);
-%         shortenObsC2_B      = C2C_B_corr(satUsedInd_B2)' - CLKoffset_B(end);
-%         shortenObsL2_R      = L2C_R_corr(satUsedInd_R2)'  - CLKoffset_R(end);
-%         shortenObsL2_B      = L2C_B_corr(satUsedInd_B2)'  - CLKoffset_B(end);
+        shortenObsC2_R      = C2C_R_corr(satUsedInd_R2)' - CLKoffset_R(end);
+        shortenObsC2_B      = C2C_B_corr(satUsedInd_B2)' - CLKoffset_B(end);
+        shortenObsL2_R      = L2C_R_corr(satUsedInd_R2)'  - CLKoffset_R(end);
+        shortenObsL2_B      = L2C_B_corr(satUsedInd_B2)'  - CLKoffset_B(end);
        
         
         SD_C2               = shortenObsC2_R - shortenObsC2_B;
@@ -501,7 +501,7 @@ x = 1:nObs;
 y1 = zeros(1,nObs);
 y2 = Accuracy_Hor_EKF';
 X=[x,fliplr(x)];                %#create continuous x value array for plotting
-Y=[y1,fliplr(y2)];              %#create y values for out and then back
+Y=[y1,fliplr(y2(1:nObs))];              %#create y values for out and then back
 figure; hold on; set(gcf,'color','w'); grid on; axis tight; box on;
 fill(X,Y,'k', 'FaceColor',[0.862745106220245 0.862745106220245 0.862745106220245]);
 ylim([0,4.5*median(y2)])

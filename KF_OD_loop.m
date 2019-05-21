@@ -5,8 +5,8 @@ function [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS)
        x_old_old=obj.state_;
        tau=1;
        z_i=1;
-       e0=0.9;
-       f0=0.1;
+       e0=0.99;
+       f0=0.01;
        ti=1;
        shreshold=1e-7;
   %% Update
@@ -39,9 +39,9 @@ function [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS)
             x_old_old=x_new_new;
             P_old_old=P_new_new;
             ti=ti+1;
-            if(iGNSS<10)
-                z_i=1;
-            end
+%             if(iGNSS<10)
+%                 z_i=1;
+%             end
      end
         x_old_old(1:3)=x_old_old(1:3)+basePosition';
         obj.state_= x_old_old;
