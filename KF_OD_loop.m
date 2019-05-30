@@ -1,4 +1,4 @@
-function [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS)
+function [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta)
 %% Prediction
        basePosition = [4041839.1018   537121.6018  4888452.5105]; 
        obj.state_(1:3)=obj.state_(1:3)-basePosition';
@@ -8,10 +8,12 @@ function [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS)
        e0=0.99;
        f0=0.01;
        ti=1;
-       shreshold=1e-7;
+       shreshold=1e-6;
+       z=z+z_DDDelta;
   %% Update
   
      while(tau>shreshold)
+         
 
          if(z_i<1e-10)
            x_new_new=obj.state_;
@@ -39,6 +41,9 @@ function [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS)
             x_old_old=x_new_new;
             P_old_old=P_new_new;
             ti=ti+1;
+%              if(iGNSS==10)
+%                 1;
+%             end
 %             if(iGNSS<10)
 %                 z_i=1;
 %             end

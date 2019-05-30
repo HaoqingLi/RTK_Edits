@@ -10,7 +10,7 @@ Jh = zeros(2*n, length(state));
 
 SDAmb               = state(7:end);
 roverPos            = state(1:3)';                                        % Position of the rover, obtained by suming the position of the base to the baseline between base and rover
-for i = 1:n  
+for i = 1:n-  
     d_i(i)             = norm(roverPos - satPos(i,:));                      % normalised LOS vector pointing from the rover to the ith satellite
     d_Ref(i)           = norm(roverPos - satRefPos(i,:));                   % normalised LOS vector pointing from the rover to the reference satellite
     Jh(i,1:3)       = [ (satPos(i,:) - roverPos)/d_i(i) - (satRefPos(i,:) - roverPos)/d_Ref(i) ];

@@ -29,7 +29,7 @@ dbstop if warning
 dbstop if error
 addpath 03_Functions
 addpath EKF_Classes
-addpath Functions
+addpath Detail_function
 % Global Variables
 FreqL1 = 1575.42e6;
 FreqL2 = 1227.60e6;
@@ -50,7 +50,7 @@ basePosition = [4041839.1018   537121.6018  4888452.5105];
 
 
 %%%%%%%%%%% This should be (public) options!
-NumberEpochs2Use = 100;%4500;
+NumberEpochs2Use = 50;%4500;
 GPS_flag = 1; GLO_flag = 0; GAL_flag = 0;
 elevationMask = 15;
 %%%%%%%%%%% These should NOT be (public) options!
@@ -58,7 +58,7 @@ useCycleSlipDetection = 0; useCycleSlipDetectionFreqComb = 1;
 useInstantaneousMode = 1;
 useDopplerUpdate = 0;
 SlipThres   = 0.005;
-Ratio2FixAmb= 2;%3;
+Ratio2FixAmb= 2;
 useFixHold = 0;
 useCorrectionDebug = 1;
 %%%%%%%%%%%
@@ -120,8 +120,8 @@ Observ_h    = @CorrectionModelEKF_RTK;
 % Satellite observation weighting
 setVarianceL1 = @(El) 0.15 * (0.001./sin(El));
 setVarianceL2 = @(El) 0.10 * (0.001./sin(El));
-ScalingPhase = 1/10;  %  (1/100)^2; %1; %   
-ScalingCode =  100;  % 1;% 10000; %  
+ScalingPhase = 1/1e4;%(1/100)^2;
+ScalingCode = 1;%1;
 
 RTK = RTK_Release(...
         '-basePosition', basePosition,...
@@ -165,7 +165,7 @@ Cov_Amb_EKF = NaN(1,nSatTot*2);
 Accuracy_Hor_EKF = NaN(NumberEpochs2Use,1);
 numberObservations = [];
 
-dif=zeros(36,NumberEpochs2Use);
+dif_est=zeros(NumberEpochs2Use,10);
 
 Pos_ECEF_EKF    = NaN(NumberEpochs2Use, 3);
 Vel_ECEF_EKF    = NaN(NumberEpochs2Use, 3);
@@ -201,9 +201,7 @@ for iGNSS=1:NumberEpochs2Use
     % Cycle Slip Detection
     in_function_cycleSlip(useCycleSlipDetection);
     
-    if(iGNSS==139)
-        1;
-    end
+    
           
 %%  EKF - RTK   
     % 1) Prediction step
@@ -213,7 +211,7 @@ for iGNSS=1:NumberEpochs2Use
     % 2) GPS L1) Selection of the GPS satellites in L1 observed by the base and rover simultaneously
     satLOSL1            = intersect(satPRN_R1,satPRN_B1); satUsedInd_R1 = ismember(satPRN_R1,satLOSL1); satUsedInd_B1 = ismember(satPRN_B1,satLOSL1);
     if length(satLOSL1)<2 % Check whether there is at least two satellites for this frequency
-        DD_C1 = [];  DD_L1 = []; satRefPRNL1 = []; satPosL1 = []; satRefPosL1 = []; satPRNL1 = []; satUsedInd_R1 = []; delta_L1= [];
+        DD_C1 = [];  DD_L1 = []; satRefPRNL1 = []; satPosL1 = []; satRefPosL1 = []; satPRNL1 = []; satUsedInd_R1 = [];
     else
         if isempty(intersect(satRefPRNL1,satPRN_R1))                              % Find the reference satellite for GPS L1
             [~,satRefL1_R]    = max(SV_elev_R1);
@@ -245,34 +243,25 @@ for iGNSS=1:NumberEpochs2Use
         shortenObsC1_R      = C1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 ) - CLKoffset_R(end);
         shortenObsC1_B      = C1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end);
         shortenObsL1_R      = L1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 ) - CLKoffset_R(end);
-        shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end);
+        shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end); 
         
         range_1_R=sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 );
         range_1_B=sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 );
 
-        
-        
-        
-%         shortenObsC1_R      = C1C_R_corr(satUsedInd_R1)'  - CLKoffset_R(end);
-%         shortenObsC1_B      = C1C_B_corr(satUsedInd_B1)'  - CLKoffset_B(end);
-%         shortenObsL1_R      = L1C_R_corr(satUsedInd_R1)'  - CLKoffset_R(end);
-%         shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)'  - CLKoffset_B(end);
-       
-        
-        
         SD_C1               = shortenObsC1_R - shortenObsC1_B;
         SD_L1               = shortenObsL1_R - shortenObsL1_B;
         
         DD_C1               = shortenObsC1_R - shortenObsC1_R(satRefL1_R) - (shortenObsC1_B - shortenObsC1_B(satRefL1_R));
         DD_L1               = shortenObsL1_R - shortenObsL1_R(satRefL1_R) - (shortenObsL1_B - shortenObsL1_B(satRefL1_R));
-    % shortenObsL1_B=ObsL1_B-delta_L1
+    
+     % shortenObsL1_B=ObsL1_B-delta_L1
         delta_L1=range_1_R-range_1_R(satRefL1_R)-range_1_B+range_1_B(satRefL1_R);
     end
     
     % 2) GPS L2) Selection of the GPS satellites in L2 observed by the base and rover simultaneously
     satLOSL2            = intersect(satPRN_R2,satPRN_B2); satUsedInd_R2 = ismember(satPRN_R2,satLOSL2); satUsedInd_B2 = ismember(satPRN_B2,satLOSL2);
     if length(satLOSL2)<2 % Check whether there is at least two satellites for this frequency
-        DD_C2 = [];  DD_L2 = []; satRefPRNL2 = []; satPosL2 = []; satRefPosL2 = []; satPRNL2 = []; satUsedInd_R2 = []; delta_L2= [];
+        DD_C2 = [];  DD_L2 = []; satRefPRNL2 = []; satPosL2 = []; satRefPosL2 = []; satPRNL2 = []; satUsedInd_R2 = [];
     else
         if isempty(intersect(satRefPRNL2,satPRN_R2))                              % Find the reference satellite for GPS L2
             [~,satRefL2_R]    = max(SV_elev_R2);
@@ -305,16 +294,9 @@ for iGNSS=1:NumberEpochs2Use
         shortenObsC2_B      = C2C_B_corr(satUsedInd_B2)' - sqrt( (basePosition(1) - SV_pos_B2(satUsedInd_B2,1)).^2 + (basePosition(2) - SV_pos_B2(satUsedInd_B2,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B2,3)).^2 ) - CLKoffset_B(end);
         shortenObsL2_R      = L2C_R_corr(satUsedInd_R2)' - sqrt( (RTK.state_(1) - SV_pos_R2(satUsedInd_R2,1)).^2 + (RTK.state_(2) - SV_pos_R2(satUsedInd_R2,2)).^2 + (RTK.state_(3) - SV_pos_R2(satUsedInd_R2,3)).^2 ) - CLKoffset_R(end);
         shortenObsL2_B      = L2C_B_corr(satUsedInd_B2)' - sqrt( (basePosition(1) - SV_pos_B2(satUsedInd_B2,1)).^2 + (basePosition(2) - SV_pos_B2(satUsedInd_B2,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B2,3)).^2 ) - CLKoffset_B(end);
-        
+    
         range_2_R=sqrt( (RTK.state_(1) - SV_pos_R2(satUsedInd_R2,1)).^2 + (RTK.state_(2) - SV_pos_R2(satUsedInd_R2,2)).^2 + (RTK.state_(3) - SV_pos_R2(satUsedInd_R2,3)).^2 );
         range_2_B=sqrt( (basePosition(1) - SV_pos_B2(satUsedInd_B2,1)).^2 + (basePosition(2) - SV_pos_B2(satUsedInd_B2,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B2,3)).^2 );
-
-
-%         shortenObsC2_R      = C2C_R_corr(satUsedInd_R2)' - CLKoffset_R(end);
-%         shortenObsC2_B      = C2C_B_corr(satUsedInd_B2)' - CLKoffset_B(end);
-%         shortenObsL2_R      = L2C_R_corr(satUsedInd_R2)'  - CLKoffset_R(end);
-%         shortenObsL2_B      = L2C_B_corr(satUsedInd_B2)'  - CLKoffset_B(end);
-       
         
         SD_C2               = shortenObsC2_R - shortenObsC2_B;
         SD_L2               = shortenObsL2_R - shortenObsL2_B;
@@ -339,7 +321,6 @@ for iGNSS=1:NumberEpochs2Use
     DDRange             = [DD_C1; DD_C2];
     DDPhase             = [DD_L1; DD_L2];
     DDDelta             = [delta_L1; delta_L2];
-    
     numberObservations  = [numberObservations; [ length(DD_C1), length(DD_C2), length(DD_C1)+length(DD_C2)] ];
     
     numberObSatellitesUsedL1(iGNSS) = length(DD_C1);
@@ -356,12 +337,14 @@ for iGNSS=1:NumberEpochs2Use
     end % End of the instanteous mode
 
     % 6) CORRECTION STEP
-        [ filterOutput]        = RTK.correctionNonINSRTK(satPRN, satRefPRN, satPos, satRefPos, DDPhase, DDRange, wavelengthVector, typeObs,iGNSS,DDDelta)';
-%         dif(1:length(filterOutput(27:end)),iGNSS)=filterOutput(27:end)';
+        filterOutput        = RTK.correctionNonINSRTK(satPRN, satRefPRN, satPos, satRefPos, DDPhase, DDRange, wavelengthVector, typeObs,iGNSS,DDDelta)';
+        
         if useDopplerUpdate                                      % Correction using the Doppler measurements
             tmp = RTK.correctionLCVelocity(Vel_ECEF_R(end,1:3)', LS_Class.P_velocity_matrix(1:3,1:3) );
         end
     
+        
+       
     
     % 7) MLAMBDA Algorithm for ambiguity fixing
     % A) Integer Ambiguity estimation
@@ -382,6 +365,18 @@ for iGNSS=1:NumberEpochs2Use
             RTK.state_(1:sizeState) = fixSolution';
         end
     end
+    
+dif_est(iGNSS,1:length(C1C_R_corr))=C1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 );
+rho_est_matrix=sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 );
+
+shortenObsC1_R      = C1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 ) - CLKoffset_R(end);
+shortenObsC1_B      = C1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end);
+shortenObsL1_R      = L1C_R_corr(satUsedInd_R1)' - sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 ) - CLKoffset_R(end);
+shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)' - sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 ) - CLKoffset_B(end); 
+        
+DD_C1               = shortenObsC1_R - shortenObsC1_R(satRefL1_R) - (shortenObsC1_B - shortenObsC1_B(satRefL1_R));
+       
+rho_est(iGNSS)=rho_est_matrix(4);%C1C_R_corr(4);%DD_C1(1);%
     
     % Saving the estimation for the position, velocity and ambiguities
     nObs = length(fixRatio);
@@ -521,7 +516,7 @@ x = 1:nObs;
 y1 = zeros(1,nObs);
 y2 = Accuracy_Hor_EKF';
 X=[x,fliplr(x)];                %#create continuous x value array for plotting
-Y=[y1,fliplr(y2(1:nObs))];              %#create y values for out and then back
+Y=[y1,fliplr(y2)];              %#create y values for out and then back
 figure; hold on; set(gcf,'color','w'); grid on; axis tight; box on;
 fill(X,Y,'k', 'FaceColor',[0.862745106220245 0.862745106220245 0.862745106220245]);
 ylim([0,4.5*median(y2)])
@@ -550,11 +545,7 @@ ylabel('satellites','Fontsize',13,'interpreter','latex')
 
 set(gca,'FontSize',13,'TickLabelInterpreter','latex');
 
-figure
- for i=1:iGNSS
-covar(i)=sqrt(dif(:,i)'*dif(:,i)/size(dif,1));
-end
-plot(1:iGNSS,covar)
+
 
 
 

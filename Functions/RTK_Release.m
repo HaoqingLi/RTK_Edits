@@ -716,6 +716,7 @@ classdef RTK_Release < TutorialBasePack.AbstractKalmanFilter
             waveLengVec = varargin{7};
             typeObs     = varargin{8};
             iGNSS       = varargin{9};
+            DDDelta     = varargin{10};
             nObs        = length(satLOS);
             
 %             switch obj.model_
@@ -771,15 +772,19 @@ classdef RTK_Release < TutorialBasePack.AbstractKalmanFilter
             % Jacobian matrix of the solution
             [H, obj.D_]              = obj.H_( obj.state_, obj.sizeState_, satPos, satRefPos, refPosIndx, waveLengVec, typeObs, obj.leverArmIMU2GNSS_ );
             z                   = [DDPhase; DDRange];                       % Pile up phase and range measurements           
-            
+            z_DDDelta           = [DDDelta; DDDelta];
             % Application of the correction model using the predicted state
             z([refPosIndx,nObs+refPosIndx]) = [];                           % Eliminate the measurements corresponding to the reference satellites
+            z_DDDelta([refPosIndx,nObs+refPosIndx]) = [];
             satPos([refPosIndx],:) = [];                                   
             satRefPos([refPosIndx],:) = [];                                
             waveLengVec2 = waveLengVec; waveLengVec2(refPosIndx) = [];
             h_z                 = obj.h_( obj.state_, satPos, satRefPos, obj.state_(obj.sizeState_+1:end), waveLengVec2, obj.D_, obj.leverArmIMU2GNSS_); % Observation model
-            obj.y_              = z - h_z; % H*obj.state_;%h_z%;                                  % Innovation: difference between the observed measurements and the observation model which relates observations and state         
-            
+            obj.state_(1:3)=obj.state_(1:3)-basePosition';
+            obj.y_              = z-h_z;%H*obj.state_;%        z - h_z;  %                     % Innovation: difference between the observed measurements and the observation model which relates observations and state         
+            obj.state_(1:3)=obj.state_(1:3)+basePosition';
+            state1=obj.state_;
+            state1(1:3)=obj.state_(1:3)-basePosition';
             % Building R matrix for the observations
             R_values            = diag(obj.R_);                             % the R values include the covariances for the phase and code measurements 
             R_phase             = R_values(1:nObs);
@@ -792,8 +797,10 @@ classdef RTK_Release < TutorialBasePack.AbstractKalmanFilter
 %             innovation          = obj.K_ * obj.y_;
 %             obj.state_          = obj.state_ + innovation;             % update the mean of the state
 %             obj.P_              = (eye(size(obj.P_,1)) - obj.K_ * H) * obj.P_;  % update the state covariance.
-            
-            [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS);
+%             state2=obj.state_;
+%             state2(1:3)=obj.state_(1:3)-basePosition';
+%             dif=H*(state2-state1);
+            [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta);
             
             % Saving the single and double difference phase ambiguities
             obj.SDAmb_          = obj.state_(obj.sizeState_+1:end);         % Saving the single and double difference ambiguities of the satellites
@@ -818,7 +825,7 @@ classdef RTK_Release < TutorialBasePack.AbstractKalmanFilter
             end
             %%%%%%%%%%%
             if nargout == 1
-                varargout{1} = obj.state_;
+                varargout{1} = [obj.state_];
             else
                 varargout = [];
             end           
