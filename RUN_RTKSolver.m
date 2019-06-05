@@ -118,10 +118,17 @@ Jq          = @(dt,state) [dt^2/2*eye(3),  zeros([3,length(state)-6]);     dt*ey
 Jh          = @BuildJacobianEKF_RTK;
 Observ_h    = @CorrectionModelEKF_RTK;                                       
 % Satellite observation weighting
-setVarianceL1 = @(El) 0.15 * (0.001./sin(El));
-setVarianceL2 = @(El) 0.10 * (0.001./sin(El));
-ScalingPhase = 1/10;  %  (1/100)^2; %1; %   
-ScalingCode =  100;  % 1;% 10000; %  
+%% original
+% setVarianceL1 = @(El) 0.15 * (0.001./sin(El));
+% setVarianceL2 = @(El) 0.10 * (0.001./sin(El));
+% ScalingPhase = 1/10;  %  (1/100)^2; %1; %   
+% ScalingCode =  100;  % 1;% 10000; %  
+%% updates with bigger variance
+setVarianceL1 = @(El) 2 * (4e-6+(2e-3./sin(El)).^2);
+setVarianceL2 = @(El) 2e4 * (4e-6+(2e-3./sin(El)).^2);
+ScalingPhase = 1;%(1/100)^2;
+ScalingCode = 1;%1;
+
 
 RTK = RTK_Release(...
         '-basePosition', basePosition,...
