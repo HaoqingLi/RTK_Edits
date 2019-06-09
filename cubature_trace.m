@@ -1,4 +1,4 @@
-function [samp,samp_mean,samp_var,B_t]=cubature(mu,var,y,obj,satPos, satRefPos,waveLengVec2,basePosition)
+function [B_t]=cubature_trace(mu,var,y,obj,satPos, satRefPos,waveLengVec2,basePosition)
 S=chol(var,'lower');
 n=length(mu);
 univec1=eye(n);
@@ -10,7 +10,7 @@ B_t=0;
 for i=1:2*n
     x=samp(:,i);
     h_x_new_new = observation_est( x, satPos, satRefPos, x(obj.sizeState_+1:end), waveLengVec2, obj.D_, basePosition); % Observation model
-    B_t=B_t+(y-h_x_new_new)*(y-h_x_new_new)';
+    B_t=B_t+(y-h_x_new_new)'*inv(obj.R_)*(y-h_x_new_new);
 end
 B_t=B_t./(2*n);
 samp_mean=mean(samp,2);

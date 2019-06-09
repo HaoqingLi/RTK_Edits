@@ -792,16 +792,19 @@ classdef RTK_Release < TutorialBasePack.AbstractKalmanFilter
             obj.R_              = [obj.D_*diag(R_phase)*obj.D_',   zeros(size(obj.D_*diag(R_code)*obj.D_'));        zeros(size(obj.D_*diag(R_phase)*obj.D_')),    obj.D_*diag(R_code)*obj.D_'];
              
             % Correction Step
-            obj.S_              = H*obj.P_*H' + obj.R_;                     % Innovation covariance
-            obj.K_              = obj.P_*H'/obj.S_;                         % Kalman Gain
-            innovation          = obj.K_ * obj.y_;
-            obj.state_          = obj.state_ + innovation;             % update the mean of the state
-            obj.P_              = (eye(size(obj.P_,1)) - obj.K_ * H) * obj.P_;  % update the state covariance.
+%             obj.S_              = H*obj.P_*H' + obj.R_;                     % Innovation covariance
+%             obj.K_              = obj.P_*H'/obj.S_;                         % Kalman Gain
+%             innovation          = obj.K_ * obj.y_;
+%             obj.state_          = obj.state_ + innovation;             % update the mean of the state
+%             obj.P_              = (eye(size(obj.P_,1)) - obj.K_ * H) * obj.P_;  % update the state covariance.
 %             state2=obj.state_;
 %             state2(1:3)=obj.state_(1:3)-basePosition';
 %             dif=H*(state2-state1);
 %             [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta);
             
+            [obj]=KF_OD_loop_new(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta,satPos, satRefPos,waveLengVec2);
+            
+
             % Saving the single and double difference phase ambiguities
             obj.SDAmb_          = obj.state_(obj.sizeState_+1:end);         % Saving the single and double difference ambiguities of the satellites
             obj.DDAmb_          = obj.D_ * obj.SDAmb_;

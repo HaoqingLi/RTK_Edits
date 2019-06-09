@@ -124,11 +124,13 @@ Observ_h    = @CorrectionModelEKF_RTK;
 % ScalingPhase = 1/10;  %  (1/100)^2; %1; %   
 % ScalingCode =  100;  % 1;% 10000; %  
 %% updates with bigger variance
-setVarianceL1 = @(El) 2 * (4e-6+(2e-3./sin(El)).^2);
-setVarianceL2 = @(El) 2e4 * (4e-6+(2e-3./sin(El)).^2);
-ScalingPhase = 1;%(1/100)^2;
-ScalingCode = 1;%1;
-
+a = 0.002;
+b = 0.002;
+f = 100^2;
+setVarianceL1 = @(El) 2 * (a^2+(b^2./sin(El)).^2);
+setVarianceL2 = @(El) 2 * (a^2+(b^2./sin(El)).^2);
+ScalingPhase = 1000;
+ScalingCode = f*10;
 
 RTK = RTK_Release(...
         '-basePosition', basePosition,...
