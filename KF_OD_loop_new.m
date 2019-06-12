@@ -1,4 +1,4 @@
-function [obj]=KF_OD_loop_new(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta,satPos, satRefPos,waveLengVec2)
+function [obj,z_i]=KF_OD_loop_new(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta,satPos, satRefPos,waveLengVec2)
 %% Prediction
        basePosition = [4041839.1018   537121.6018  4888452.5105]; 
 %        obj.state_(1:3)=obj.state_(1:3)-basePosition';

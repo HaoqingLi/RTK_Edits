@@ -50,7 +50,7 @@ basePosition = [4041839.1018   537121.6018  4888452.5105];
 
 
 %%%%%%%%%%% This should be (public) options!
-NumberEpochs2Use = 100;%4500;
+NumberEpochs2Use = 200;%4500;
 GPS_flag = 1; GLO_flag = 0; GAL_flag = 0;
 elevationMask = 15;
 %%%%%%%%%%% These should NOT be (public) options!
@@ -111,7 +111,7 @@ Jf          = @(dt,state) [eye(3), dt*eye(3), zeros([3,length(state)-6]);...
 Q_velocity  = (0.1);
 Q_amb       = (0.01);
 Q_position  = 1000; 
-Q_          = blkdiag( Q_velocity * eye(3) );            
+Q_          = blkdiag( Q_position * eye(3) );    %blkdiag( Q_velocity * eye(3) );            
 % Jacobian for the system noise
 Jq          = @(dt,state) [dt^2/2*eye(3),  zeros([3,length(state)-6]);     dt*eye(3),  zeros([3,length(state)-6]);     zeros([length(state)-6,3]),  dt*eye(length(state)-6)];
 % Jacobian and process model for the correction step
@@ -129,8 +129,8 @@ b = 0.002;
 f = 100^2;
 setVarianceL1 = @(El) 2 * (a^2+(b^2./sin(El)).^2);
 setVarianceL2 = @(El) 2 * (a^2+(b^2./sin(El)).^2);
-ScalingPhase = 1000;
-ScalingCode = f*10;
+ScalingPhase =1000;% 1;%
+ScalingCode = f*10;%f;%
 
 RTK = RTK_Release(...
         '-basePosition', basePosition,...
@@ -367,10 +367,14 @@ for iGNSS=1:NumberEpochs2Use
     % 6) CORRECTION STEP
         [ filterOutput]        = RTK.correctionNonINSRTK(satPRN, satRefPRN, satPos, satRefPos, DDPhase, DDRange, wavelengthVector, typeObs,iGNSS,DDDelta)';
 %         dif(1:length(filterOutput(27:end)),iGNSS)=filterOutput(27:end)';
+z_i_(iGNSS)=filterOutput(end);
+
+filterOutput=filterOutput(1,1:length(filterOutput)-1);
+
         if useDopplerUpdate                                      % Correction using the Doppler measurements
             tmp = RTK.correctionLCVelocity(Vel_ECEF_R(end,1:3)', LS_Class.P_velocity_matrix(1:3,1:3) );
         end
-    
+    DDAMB(iGNSS)=RTK.DDAmb_(1);
     
     % 7) MLAMBDA Algorithm for ambiguity fixing
     % A) Integer Ambiguity estimation

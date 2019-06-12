@@ -797,12 +797,13 @@ classdef RTK_Release < TutorialBasePack.AbstractKalmanFilter
 %             innovation          = obj.K_ * obj.y_;
 %             obj.state_          = obj.state_ + innovation;             % update the mean of the state
 %             obj.P_              = (eye(size(obj.P_,1)) - obj.K_ * H) * obj.P_;  % update the state covariance.
-%             state2=obj.state_;
+%             z_i=1;
+            %             state2=obj.state_;
 %             state2(1:3)=obj.state_(1:3)-basePosition';
 %             dif=H*(state2-state1);
 %             [obj]=KF_OD_loop(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta);
             
-            [obj]=KF_OD_loop_new(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta,satPos, satRefPos,waveLengVec2);
+            [obj,z_i]=KF_OD_loop_new(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta,satPos, satRefPos,waveLengVec2);
             
 
             % Saving the single and double difference phase ambiguities
@@ -828,7 +829,7 @@ classdef RTK_Release < TutorialBasePack.AbstractKalmanFilter
             end
             %%%%%%%%%%%
             if nargout == 1
-                varargout{1} = [obj.state_];
+                varargout{1} = [obj.state_;z_i];
             else
                 varargout = [];
             end           
