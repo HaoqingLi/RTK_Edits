@@ -50,20 +50,34 @@ basePosition = [4041839.1018   537121.6018  4888452.5105];
 
 
 %%%%%%%%%%% This should be (public) options!
-NumberEpochs2Use = 200;%4500;
+useVariationalFilter = 0;
+NumberEpochs2Use = 4500;%4500;
 GPS_flag = 1; GLO_flag = 0; GAL_flag = 0;
 elevationMask = 15;
 %%%%%%%%%%% These should NOT be (public) options!
 useCycleSlipDetection = 0; useCycleSlipDetectionFreqComb = 1;
 useInstantaneousMode = 1;
-useDopplerUpdate = 0;
 SlipThres   = 0.005;
 Ratio2FixAmb= 2;%3;
 useFixHold = 0;
 useCorrectionDebug = 1;
+observationModel = 'elevation-based' ; % 'elevation-based' 'CN0-based'
 %%%%%%%%%%%
 
 
+%%%%%%% Variance models
+a_elev = 0.002; % Values from Eling "Development of an RTK-GPS system for precise ... "
+b_elev = 0.002; % Values from Eling
+f = 100^2;
+elevationVarianceModel = @(a,b,El) 2 * (a^2+(b^2./sin(El)).^2);
+a_CN0 = 10; % Values from Kuusniemi
+b_CN0 = 150^2; % Values from Kuusniemi
+a_CN0 = 0.3; % Values from ION 2019
+b_CN0 = 144^2; % Values from ION 2019
+cn0VarianceModel = @(a,b,CN0) a + b * 10.^( -CN0/10 );
+ScalingPhase =1; %1000;% 1;%
+ScalingCode = f; %f*10;%f;%
+%%%%%%% 
 
 
 
@@ -117,22 +131,8 @@ Jq          = @(dt,state) [dt^2/2*eye(3),  zeros([3,length(state)-6]);     dt*ey
 % Jacobian and process model for the correction step
 Jh          = @BuildJacobianEKF_RTK;
 Observ_h    = @CorrectionModelEKF_RTK;                                       
-% Satellite observation weighting
-%% original
-% setVarianceL1 = @(El) 0.15 * (0.001./sin(El));
-% setVarianceL2 = @(El) 0.10 * (0.001./sin(El));
-% ScalingPhase = 1/10;  %  (1/100)^2; %1; %   
-% ScalingCode =  100;  % 1;% 10000; %  
-%% updates with bigger variance
-a = 0.002;
-b = 0.002;
-f = 100^2;
-setVarianceL1 = @(El) 2 * (a^2+(b^2./sin(El)).^2);
-setVarianceL2 = @(El) 2 * (a^2+(b^2./sin(El)).^2);
-ScalingPhase =1000;% 1;%
-ScalingCode = f*10;%f;%
 
-RTK = RTK_Release(...
+RTK = RTK_Variational(...
         '-basePosition', basePosition,...
         '-sizeState', sizeState,...
         '-dynModel',Dynamic_f,...
@@ -259,16 +259,6 @@ for iGNSS=1:NumberEpochs2Use
         range_1_R=sqrt( (RTK.state_(1) - SV_pos_R1(satUsedInd_R1,1)).^2 + (RTK.state_(2) - SV_pos_R1(satUsedInd_R1,2)).^2 + (RTK.state_(3) - SV_pos_R1(satUsedInd_R1,3)).^2 );
         range_1_B=sqrt( (basePosition(1) - SV_pos_B1(satUsedInd_B1,1)).^2 + (basePosition(2) - SV_pos_B1(satUsedInd_B1,2)).^2 + (basePosition(3) - SV_pos_B1(satUsedInd_B1,3)).^2 );
 
-        
-        
-        
-%         shortenObsC1_R      = C1C_R_corr(satUsedInd_R1)'  - CLKoffset_R(end);
-%         shortenObsC1_B      = C1C_B_corr(satUsedInd_B1)'  - CLKoffset_B(end);
-%         shortenObsL1_R      = L1C_R_corr(satUsedInd_R1)'  - CLKoffset_R(end);
-%         shortenObsL1_B      = L1C_B_corr(satUsedInd_B1)'  - CLKoffset_B(end);
-       
-        
-        
         SD_C1               = shortenObsC1_R - shortenObsC1_B;
         SD_L1               = shortenObsL1_R - shortenObsL1_B;
         
@@ -355,7 +345,14 @@ for iGNSS=1:NumberEpochs2Use
     numberObSatellitesUsedL2(iGNSS) = length(DD_C2);
     
     % 4) Variance model for the observations
-    varianceObs         = [setVarianceL1( SV_elev_R1(satUsedInd_R1) ), setVarianceL2( SV_elev_R2(satUsedInd_R2) )];
+    switch observationModel
+        case 'elevation-based' 
+            varianceObs         = [elevationVarianceModel( a_elev, b_elev, SV_elev_R1(satUsedInd_R1) ), elevationVarianceModel( a_elev, b_elev, SV_elev_R2(satUsedInd_R2) )];
+        case 'CN0-based'
+            varianceObs         = [cn0VarianceModel( a_CN0, b_CN0, SV_SNR_R1(satUsedInd_R1) ), cn0VarianceModel( a_CN0, b_CN0, SV_SNR_R2(satUsedInd_R2) )];
+        otherwise 
+            varianceObs         = [elevationVarianceModel( a_elev, b_elev, SV_elev_R1(satUsedInd_R1) ), elevationVarianceModel( a_elev, b_elev, SV_elev_R2(satUsedInd_R2) )];
+    end
     RTK.R_              = diag([ScalingPhase*varianceObs, ScalingCode*varianceObs]);
     
     
@@ -365,16 +362,13 @@ for iGNSS=1:NumberEpochs2Use
     end % End of the instanteous mode
 
     % 6) CORRECTION STEP
+    if useVariationalFilter == true
+        [ filterOutput]        = RTK.correctionNonINSRTK_Variational(satPRN, satRefPRN, satPos, satRefPos, DDPhase, DDRange, wavelengthVector, typeObs,iGNSS,DDDelta)';
+        z_i_(iGNSS)=filterOutput(end);
+        filterOutput=filterOutput(1,1:length(filterOutput)-1);
+    else % Use the regular EKF
         [ filterOutput]        = RTK.correctionNonINSRTK(satPRN, satRefPRN, satPos, satRefPos, DDPhase, DDRange, wavelengthVector, typeObs,iGNSS,DDDelta)';
-%         dif(1:length(filterOutput(27:end)),iGNSS)=filterOutput(27:end)';
-z_i_(iGNSS)=filterOutput(end);
-
-filterOutput=filterOutput(1,1:length(filterOutput)-1);
-
-        if useDopplerUpdate                                      % Correction using the Doppler measurements
-            tmp = RTK.correctionLCVelocity(Vel_ECEF_R(end,1:3)', LS_Class.P_velocity_matrix(1:3,1:3) );
-        end
-    DDAMB(iGNSS)=RTK.DDAmb_(1);
+    end
     
     % 7) MLAMBDA Algorithm for ambiguity fixing
     % A) Integer Ambiguity estimation
@@ -435,7 +429,7 @@ plot(Pos_ELL_EKF(1:nObs,2), Pos_ELL_EKF(1:nObs,1),'.')
 ax = gca; ax.ColorOrderIndex = 5;
 plot(Pos_ELL_EKFfix(1:nObs,2),Pos_ELL_EKFfix(1:nObs,1),'.')
 axis off
-% plot_google_map
+% plot_google_map( 'scale',2,'maptype','roadmap','showlabels',0,'mapscale',1, 'APIKey', 'AIzaSyCWyF15LwrY5ftaMNr_PQICwKwXo9NLj0c'  )
 leg = legend('Float solution', 'Fix solution');
 set(leg, 'interpreter','latex','fontsize',12);
 
