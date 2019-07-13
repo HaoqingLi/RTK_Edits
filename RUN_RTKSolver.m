@@ -50,13 +50,13 @@ basePosition = [4041839.1018   537121.6018  4888452.5105];
 
 
 %%%%%%%%%%% This should be (public) options!
-useVariationalFilter = 0;
-NumberEpochs2Use = 4500;%4500;
+useVariationalFilter = 1;
+NumberEpochs2Use = 30;%4500;
 GPS_flag = 1; GLO_flag = 0; GAL_flag = 0;
 elevationMask = 15;
 %%%%%%%%%%% These should NOT be (public) options!
 useCycleSlipDetection = 0; useCycleSlipDetectionFreqComb = 1;
-useInstantaneousMode = 1;
+useInstantaneousMode = 0;
 SlipThres   = 0.005;
 Ratio2FixAmb= 2;%3;
 useFixHold = 0;
@@ -66,17 +66,17 @@ observationModel = 'elevation-based' ; % 'elevation-based' 'CN0-based'
 
 
 %%%%%%% Variance models
-a_elev = 0.002; % Values from Eling "Development of an RTK-GPS system for precise ... "
-b_elev = 0.002; % Values from Eling
+a_elev = 0.01; % Values from Eling "Development of an RTK-GPS system for precise ... "
+b_elev = 0.01; % Values from Eling
 f = 100^2;
-elevationVarianceModel = @(a,b,El) 2 * (a^2+(b^2./sin(El)).^2);
+elevationVarianceModel = @(a,b,El) 2 * (a^2+(b./sin(El)).^2);
 a_CN0 = 10; % Values from Kuusniemi
 b_CN0 = 150^2; % Values from Kuusniemi
 a_CN0 = 0.3; % Values from ION 2019
 b_CN0 = 144^2; % Values from ION 2019
 cn0VarianceModel = @(a,b,CN0) a + b * 10.^( -CN0/10 );
-ScalingPhase =1; %1000;% 1;%
-ScalingCode = f; %f*10;%f;%
+ScalingPhase =1; 
+ScalingCode = f; 
 %%%%%%% 
 
 
@@ -104,7 +104,13 @@ lamR = lamR * 180 / pi;
 dtR = zeros(nEpochs,1);         % receiver clock error
 min_nsat_LS = 3 + n_sys;
 
-
+%% Loading Outlier Data
+load('outlier_simulation.mat')
+outlength_C1=4;
+outlength_C2=5;
+outlength_L1=4;
+outlength_L2=3;
+outlier_ind=[1:3 5:10];
 %% Constructors for the classes
 
 %%%% MOST OF THESE FUNCTIONS AND OPTIONS SHOULD NOT BE VISIBLE AND SHOULD
@@ -210,9 +216,7 @@ for iGNSS=1:NumberEpochs2Use
     % Cycle Slip Detection
     in_function_cycleSlip(useCycleSlipDetection);
     
-    if(iGNSS==139)
-        1;
-    end
+  
           
 %%  EKF - RTK   
     % 1) Prediction step
@@ -324,6 +328,13 @@ for iGNSS=1:NumberEpochs2Use
         delta_L2=range_2_R-range_2_R(satRefL2_R)-range_2_B+range_2_B(satRefL2_R);
     
     end
+    
+    DD_C1(outlier_ind(1:outlength_C1))=DD_C1(outlier_ind(1:outlength_C1))+outlier_C1(iGNSS,outlier_ind(1:outlength_C1))';
+    DD_C2(outlier_ind(1:outlength_C2))=DD_C2(outlier_ind(1:outlength_C2))+outlier_C2(iGNSS,outlier_ind(1:outlength_C2))';
+    DD_L1(outlier_ind(1:outlength_L1))=DD_L1(outlier_ind(1:outlength_L1))+outlier_L1(iGNSS,outlier_ind(1:outlength_L1))';
+    DD_L2(outlier_ind(1:outlength_L2))=DD_L2(outlier_ind(1:outlength_L2))+outlier_L2(iGNSS,outlier_ind(1:outlength_L2))';
+    
+    
     
     % 3) Pile up all the data from different constellations/frequencies into single variables for the position of the satellites, pseudoranges, phases...
     satPos              = [satPosL1; satPosL2];
