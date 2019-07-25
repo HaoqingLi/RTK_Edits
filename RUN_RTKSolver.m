@@ -51,14 +51,14 @@ basePosition = [4041839.1018   537121.6018  4888452.5105];
 
 %%%%%%%%%%% This should be (public) options!
 useVariationalFilter = 1;
-NumberEpochs2Use = 30;%4500;
+NumberEpochs2Use = 50;%4500;
 GPS_flag = 1; GLO_flag = 0; GAL_flag = 0;
 elevationMask = 15;
 %%%%%%%%%%% These should NOT be (public) options!
 useCycleSlipDetection = 0; useCycleSlipDetectionFreqComb = 1;
 useInstantaneousMode = 0;
 SlipThres   = 0.005;
-Ratio2FixAmb= 2;%3;
+Ratio2FixAmb= 3;
 useFixHold = 0;
 useCorrectionDebug = 1;
 observationModel = 'elevation-based' ; % 'elevation-based' 'CN0-based'
@@ -105,7 +105,7 @@ dtR = zeros(nEpochs,1);         % receiver clock error
 min_nsat_LS = 3 + n_sys;
 
 %% Loading Outlier Data
-load('outlier_simulation.mat')
+load('outlier_simulation1.mat')
 outlength_C1=4;
 outlength_C2=5;
 outlength_L1=4;
