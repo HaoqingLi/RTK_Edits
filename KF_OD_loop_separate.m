@@ -43,9 +43,9 @@ function [obj,z_i]=KF_OD_loop_new(obj,z,h_z,H,basePosition,iGNSS,z_DDDelta,satPo
          
             z=z+z_DDDelta;
             x_new_new(1:3)=x_new_new(1:3)-basePosition';
-            b_t_hat=z*z'+H*(P_new_new+x_new_new*x_new_new')*H'-z*(H*x_new_new)'-(H*x_new_new)*z';
+%             b_t_hat=z*z'+H*(P_new_new+x_new_new*x_new_new')*H'-z*(H*x_new_new)'-(H*x_new_new)*z';
             x_new_new(1:3)=x_new_new(1:3)+basePosition';
-%             [samp,samp_mean,samp_var,b_t_hat]=cubature(x_new_new,P_new_new,z,obj,satPos, satRefPos,waveLengVec2,basePosition);
+            [samp,samp_mean,samp_var,b_t_hat]=cubature(x_new_new,P_new_new,z,obj,satPos, satRefPos,waveLengVec2,basePosition);
             
 %            tr=cubature_trace(x_new_new,P_new_new,z,obj,satPos, satRefPos,waveLengVec2,basePosition);
 

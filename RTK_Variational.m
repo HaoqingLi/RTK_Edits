@@ -21,7 +21,7 @@ classdef RTK_Variational < TutorialBasePack.AbstractKalmanFilter
         eulerAngles_ = [];
         Qamb_ = (10^-16);
 %         Qamb_ = 0;
-        Qvel_     = 100;%0.1^2; %(  m/s^2 )^2
+        Qvel_     = 0.1^2; %(  m/s^2 )^2
         Qgyr_  = 1000*(1/3600*1/3600)*0.005*(pi/180)^2*diag([0.03*0.03 0.03*0.03 0.03*0.03]);    % Accelerometer measurement noise covariance (interpreted as a control noise)
         Qacc_  = 9.81*9.81*0.005*(10e-12)*diag([320*320 320*320 320*320]);            % Accelerometer measurement noise covariance (interpreted as a control noise)
         QbiasGyr_ = 0.001*(1/3600*1/3600)*1/0.005*(pi/180)^2*diag([0.01*0.01 0.01*0.01 0.01*0.01]);% Process noise for estimated gyroscope bias (should be scaled with sqrt(dt))
